@@ -1,0 +1,114 @@
+[2025-02-11 11:52:46 +0000] [2590588] [ERROR] Error handling request /T2T
+Traceback (most recent call last):
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/gunicorn/workers/sync.py", line 134, in handle
+    self.handle_request(listener, req, client, addr)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/gunicorn/workers/sync.py", line 177, in handle_request
+    respiter = self.wsgi(environ, resp.start_response)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/flask/app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/home/techstaff1/Documents/PxlPersona/Server/PxlPersona_API/api.py", line 42, in T2T
+    return manager.T2T(request.json), 201
+  File "/home/techstaff1/Documents/PxlPersona/Server/PxlPersona_API/managers/manager.py", line 154, in T2T
+    gen, gen_time = wanted_user.Query(Data["query"])
+  File "/home/techstaff1/Documents/PxlPersona/Server/PxlPersona_API/libs/users.py", line 246, in Query
+    return self.Query_fn(prompt)
+  File "/home/techstaff1/Documents/PxlPersona/Server/PxlPersona_API/libs/users.py", line 222, in Query_fn
+    response = str(self._engine.chat(f"{prompt}"))
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/callbacks/utils.py", line 41, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/chat_engine/context.py", line 219, in chat
+    response = synthesizer.synthesize(message, nodes)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/response_synthesizers/base.py", line 241, in synthesize
+    response_str = self.get_response(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/response_synthesizers/compact_and_refine.py", line 43, in get_response
+    return super().get_response(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/response_synthesizers/refine.py", line 179, in get_response
+    response = self._give_response_single(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/response_synthesizers/refine.py", line 241, in _give_response_single
+    program(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/response_synthesizers/refine.py", line 85, in __call__
+    answer = self._llm.predict(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/llms/llm.py", line 596, in predict
+    chat_response = self.chat(messages)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/instrumentation/dispatcher.py", line 311, in wrapper
+    result = func(*args, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/core/llms/callbacks.py", line 173, in wrapped_llm_chat
+    f_return_val = f(_self, messages, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/llama_index/llms/ollama/base.py", line 286, in chat
+    response = self.client.chat(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/ollama/_client.py", line 236, in chat
+    return self._request_stream(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/ollama/_client.py", line 99, in _request_stream
+    return self._stream(*args, **kwargs) if stream else self._request(*args, **kwargs).json()
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/ollama/_client.py", line 70, in _request
+    response = self._client.request(method, url, **kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_client.py", line 837, in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_client.py", line 926, in send
+    response = self._send_handling_auth(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_client.py", line 954, in _send_handling_auth
+    response = self._send_handling_redirects(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_client.py", line 991, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_client.py", line 1027, in _send_single_request
+    response = transport.handle_request(request)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpx/_transports/default.py", line 236, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/httpcore/_backends/sync.py", line 128, in read
+    return self._sock.recv(max_bytes)
+  File "/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/gunicorn/workers/base.py", line 204, in handle_abort
+    sys.exit(1)
+SystemExit: 1
+[2025-02-11 11:52:46 +0000] [2590588] [INFO] Worker exiting (pid: 2590588)
+[2025-02-11 11:52:47 +0000] [2615958] [INFO] Booting worker with pid: 2615958
+libs.logger
+/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/whisper/__init__.py:150: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  checkpoint = torch.load(fp, map_location=device)
+/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/spacy/util.py:910: UserWarning: [W095] Model 'en_core_web_sm' (3.8.0) was trained with spaCy v3.8.0 and may not be 100% compatible with the current version (3.7.4). If you see errors or degraded performance, download a newer compatible model or retrain your custom model with the current spaCy version. For more details and available updates, run: python -m spacy validate
+  warnings.warn(warn_msg)
+/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_url" in LlamaCPP has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_path" in LlamaCPP has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+/home/techstaff1/Documents/PxlPersona/Server/.venv/lib/python3.10/site-packages/pydantic/_internal/_fields.py:132: UserWarning: Field "model_kwargs" in LlamaCPP has conflict with protected namespace "model_".
+
+You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+  warnings.warn(
+Since the GPL-licensed package `unidecode` is not installed, using Python's `unicodedata` package which yields worse results.
+[54360512140354 | manager | 11:52:52.635004]: llama_index | Ollama

@@ -1,0 +1,9 @@
+langchain:
+  model: /models/llama-2-7b-chat.Q4_K_M.gguf
+  source: LLamaCPP
+  temp: 0.3
+lib: llama_index
+llama_index:
+  model: llama2:7b-chat-q4_K_M
+  source: Ollama
+  temp: 0.3

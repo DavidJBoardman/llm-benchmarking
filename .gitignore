@@ -1,0 +1,39 @@
+# Environment variables and secrets
+.env
+*.env
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+*.ipynb
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Large binary files
+*.pptx
+*.ppt
+*.xlsx
+*.xls
+*.docx
+*.doc
+
+# Benchmark result data (optional - uncomment if you want to exclude)
+# *.csv
+# RTX*/
+# ADA*/
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.sqlite 

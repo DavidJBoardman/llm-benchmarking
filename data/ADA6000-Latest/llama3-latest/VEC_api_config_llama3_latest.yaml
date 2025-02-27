@@ -1,0 +1,9 @@
+langchain:
+  model: /models/llama-3-8b-uncensored.Q4_K_S.gguf
+  source: LLamaCPP
+  temp: 0.3
+lib: llama_index
+llama_index:
+  model: llama-3-8b-uncensored.Q4_K_S
+  source: Ollama
+  temp: 0.3

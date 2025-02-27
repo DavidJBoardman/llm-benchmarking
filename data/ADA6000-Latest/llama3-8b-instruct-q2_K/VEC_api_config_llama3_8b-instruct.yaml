@@ -1,0 +1,9 @@
+langchain:
+  model: /models/Llama-3.2-1B-Instruct-IQ3_M.gguf
+  source: LLamaCPP
+  temp: 0.3
+lib: llama_index
+llama_index:
+  model: Llama-3.2-1B-Instruct-IQ3_M
+  source: Ollama
+  temp: 0.3
