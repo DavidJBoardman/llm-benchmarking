@@ -3,9 +3,13 @@ runtime: python311
 build:
   commands:
     build:
-      - pip install --upgrade pip
-      - pip install --no-cache-dir -r requirements.txt
+      - pip3 install --upgrade pip
+      - pip3 install --no-cache-dir -r requirements.txt
 run:
-  command: streamlit run 1_Dashboard.py --server.port=8080 --server.address=0.0.0.0
+  runtime-version: 3.11
+  pre-run:
+    - pip3 install --upgrade pip
+    - pip3 install --no-cache-dir -r requirements.txt
+  command: python3 -m streamlit run 1_Dashboard.py --server.port=8080 --server.address=0.0.0.0
   network:
     port: 8080
