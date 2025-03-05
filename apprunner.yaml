@@ -10,10 +10,43 @@ run:
     port: 8080
     env: APP_PORT
   env:
+    # Python settings
     - name: PYTHONUNBUFFERED
       value: "1"
     - name: PYTHONDONTWRITEBYTECODE
       value: "1"
+    
+    # Database configuration
+    # These will be set in the App Runner console or through AWS CLI
+    # Do not hardcode sensitive values here
+    - name: POSTGRES_URI
+      value: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+    - name: POSTGRES_USER
+      value: "${POSTGRES_USER}"
+    - name: POSTGRES_PASSWORD
+      value: "${POSTGRES_PASSWORD}"
+    - name: POSTGRES_HOST
+      value: "${POSTGRES_HOST}"
+    - name: POSTGRES_PORT
+      value: "${POSTGRES_PORT}"
+    - name: POSTGRES_DB
+      value: "${POSTGRES_DB}"
+    - name: INIT_DB
+      value: "${INIT_DB:-false}"
+    
+    # AWS S3 Configuration
+    # These will be set in the App Runner console or through AWS CLI
+    - name: AWS_ACCESS_KEY_ID
+      value: "${AWS_ACCESS_KEY_ID}"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "${AWS_SECRET_ACCESS_KEY}"
+    - name: AWS_REGION
+      value: "${AWS_REGION}"
+    - name: S3_BUCKET_NAME
+      value: "${S3_BUCKET_NAME}"
+    - name: USE_S3_STORAGE
+      value: "${USE_S3_STORAGE}"
+      
   service_role: AppRunnerECRAccessRole
 health_check:
   path: "/_stcore/health"
