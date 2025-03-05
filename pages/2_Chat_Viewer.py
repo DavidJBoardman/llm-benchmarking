@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import os
+from utils.file_storage import read_file, list_files, is_using_s3
 
 # Define data directory
 DATA_DIR = "data"
@@ -59,11 +60,29 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] {
         gap: 0.2rem !important;
     }
+    
+    .info-box {
+        background-color: #2a4365;
+        color: #ffffff;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #4299e1;
+    }
 
     </style>
 """, unsafe_allow_html=True)
 
 st.title("💬 LLM Chat Logs Viewer")
+
+# Check if S3 is available
+if is_using_s3():
+    st.markdown(
+        """<div class="info-box">
+            📥 S3 storage is enabled. Logs will be read from S3 when available.
+        </div>""",
+        unsafe_allow_html=True
+    )
 
 # Define the model folders and their log files
 chat_logs = {
@@ -85,12 +104,11 @@ chat_logs = {
 }
 
 def read_chat_log(file_path):
-    try:
-        with open(file_path, 'r') as f:
-            content = f.read()
-        return content
-    except Exception as e:
-        return f"Error reading log file: {str(e)}"
+    """Read a chat log file from storage."""
+    content = read_file(file_path)
+    if content is None:
+        return f"Error: Log file not found: {file_path}"
+    return content
 
 def parse_chat_log(content):
     # Split the log into individual messages
@@ -188,6 +206,38 @@ def display_chat_messages(messages):
                 unsafe_allow_html=True
             )
 
+# Get S3 logs if available
+s3_logs = {}
+if is_using_s3():
+    s3_log_files = list_files(prefix="logs/")
+    if s3_log_files:
+        s3_logs["S3 Uploaded Logs"] = {}
+        
+        # Process each S3 log file
+        for log_file in s3_log_files:
+            if log_file.startswith("s3://"):
+                filename = log_file.split('/')[-1]
+                
+                # Try to extract model and GPU info from filename
+                # Format: model_gpu_timestamp_uniqueid.txt
+                parts = filename.split('_')
+                if len(parts) >= 4:  # At least model, gpu, timestamp, and some part of uniqueid
+                    # Extract model and GPU from filename
+                    model_name = parts[0]
+                    gpu_name = parts[1]
+                    timestamp = parts[2]
+                    
+                    # Format the display name
+                    display_name = f"{model_name} on {gpu_name} ({timestamp})"
+                else:
+                    # If filename doesn't match expected format, use the original filename
+                    display_name = filename
+                
+                s3_logs["S3 Uploaded Logs"][display_name] = log_file
+
+# Combine local and S3 logs
+all_logs = {**chat_logs, **s3_logs}
+
 # Sidebar for GPU and model selection
 st.sidebar.title("Settings")
 
@@ -200,14 +250,14 @@ layout_mode = st.sidebar.radio(
 
 selected_gpus = st.sidebar.multiselect(
     "Select GPUs to Compare",
-    list(chat_logs.keys()),
-    default=[list(chat_logs.keys())[0]]
+    list(all_logs.keys()),
+    default=[list(all_logs.keys())[0]]
 )
 
 # Get all unique models across selected GPUs
 all_models = set()
 for gpu in selected_gpus:
-    all_models.update(chat_logs[gpu].keys())
+    all_models.update(all_logs[gpu].keys())
 
 selected_models = st.sidebar.multiselect(
     "Select Models to View",
@@ -225,10 +275,10 @@ if selected_gpus and selected_models:
             gpu_cols = st.columns(len(selected_gpus))
             
             for gpu, col in zip(selected_gpus, gpu_cols):
-                if model in chat_logs[gpu]:
+                if model in all_logs[gpu]:
                     with col:
                         st.markdown(f"##### {gpu}")
-                        log_content = read_chat_log(chat_logs[gpu][model])
+                        log_content = read_chat_log(all_logs[gpu][model])
                         if log_content.startswith("Error"):
                             st.error(log_content)
                             continue
@@ -248,81 +298,67 @@ if selected_gpus and selected_models:
                             st.metric("Assistant", assistant_messages)
                         
                         # Average Resource Usage
-                        all_metrics = [m['metrics'] for m in messages if m.get('metrics')]
-                        if all_metrics:
-                            avg_metrics = {
-                                'cpu': sum(m['cpu'] for m in all_metrics) / len(all_metrics),
-                                'gpu': sum(m['gpu'] for m in all_metrics) / len(all_metrics),
-                                'ram': sum(m['ram'] for m in all_metrics) / len(all_metrics),
-                                'vram': sum(m['vram'] for m in all_metrics) / len(all_metrics)
-                            }
+                        if any(m.get('metrics') for m in messages):
+                            metrics = [m['metrics'] for m in messages if m.get('metrics')]
+                            avg_cpu = sum(m['cpu'] for m in metrics) / len(metrics)
+                            avg_gpu = sum(m['gpu'] for m in metrics) / len(metrics)
+                            avg_ram = sum(m['ram'] for m in metrics) / len(metrics)
+                            avg_vram = sum(m['vram'] for m in metrics) / len(metrics)
                             
-                            metric_cols = st.columns(4)
-                            metric_cols[0].metric("CPU", f"{avg_metrics['cpu']:.1f}%")
-                            metric_cols[1].metric("GPU", f"{avg_metrics['gpu']:.1f}%")
-                            metric_cols[2].metric("RAM", f"{avg_metrics['ram']:.1f}%")
-                            metric_cols[3].metric("VRAM", f"{avg_metrics['vram']:.1f}%")
+                            st.markdown(f"""
+                            **Avg Resources:**  
+                            CPU: {avg_cpu:.1f}% • GPU: {avg_gpu:.1f}% • RAM: {avg_ram:.1f}% • VRAM: {avg_vram:.1f}%
+                            """)
+                        
+                        # Display the chat messages
+                        display_chat_messages(messages)
+    else:  # Tabs layout
+        tabs = st.tabs(selected_models)
+        
+        for model, tab in zip(selected_models, tabs):
+            with tab:
+                for gpu in selected_gpus:
+                    if model in all_logs[gpu]:
+                        st.markdown(f"### {gpu}")
+                        log_content = read_chat_log(all_logs[gpu][model])
+                        if log_content.startswith("Error"):
+                            st.error(log_content)
+                            continue
+                        
+                        messages = parse_chat_log(log_content)
+                        
+                        # Chat Statistics at the top
+                        user_messages = len([m for m in messages if m['role'] == "user"])
+                        assistant_messages = len([m for m in messages if m['role'] == "assistant"])
+                        
+                        stat_cols = st.columns(4)
+                        with stat_cols[0]:
+                            st.metric("Total", len(messages))
+                        with stat_cols[1]:
+                            st.metric("User", user_messages)
+                        with stat_cols[2]:
+                            st.metric("Assistant", assistant_messages)
+                        
+                        # Average Resource Usage
+                        if any(m.get('metrics') for m in messages):
+                            metrics = [m['metrics'] for m in messages if m.get('metrics')]
+                            avg_cpu = sum(m['cpu'] for m in metrics) / len(metrics)
+                            avg_gpu = sum(m['gpu'] for m in metrics) / len(metrics)
+                            avg_ram = sum(m['ram'] for m in metrics) / len(metrics)
+                            avg_vram = sum(m['vram'] for m in metrics) / len(metrics)
+                            
+                            st.markdown(f"""
+                            **Avg Resources:**  
+                            CPU: {avg_cpu:.1f}% • GPU: {avg_gpu:.1f}% • RAM: {avg_ram:.1f}% • VRAM: {avg_vram:.1f}%
+                            """)
+                        
+                        # Display the chat messages
+                        display_chat_messages(messages)
                         
                         st.markdown("---")
-                        
-                        # Display chat messages
-                        display_chat_messages(messages)
-            
-            # Add a separator between different models
-            st.markdown("---")
-    else:  # Tabs mode
-        # Create tabs for each selected model and GPU combination
-        tab_names = [f"{gpu} - {model}" for gpu in selected_gpus for model in selected_models if model in chat_logs[gpu]]
-        tabs = st.tabs(tab_names)
-        
-        for tab, tab_name in zip(tabs, tab_names):
-            with tab:
-                gpu, model = tab_name.split(" - ")
-                log_content = read_chat_log(chat_logs[gpu][model])
-                if log_content.startswith("Error"):
-                    st.error(log_content)
-                    continue
-                
-                messages = parse_chat_log(log_content)
-                
-                # Chat Statistics at the top
-                st.subheader("📊 Chat Statistics")
-                
-                user_messages = len([m for m in messages if m['role'] == "user"])
-                assistant_messages = len([m for m in messages if m['role'] == "assistant"])
-                
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total Messages", len(messages))
-                with col2:
-                    st.metric("User Messages", user_messages)
-                with col3:
-                    st.metric("Assistant Responses", assistant_messages)
-                
-                # Average Resource Usage
-                all_metrics = [m['metrics'] for m in messages if m.get('metrics')]
-                if all_metrics:
-                    avg_metrics = {
-                        'cpu': sum(m['cpu'] for m in all_metrics) / len(all_metrics),
-                        'gpu': sum(m['gpu'] for m in all_metrics) / len(all_metrics),
-                        'ram': sum(m['ram'] for m in all_metrics) / len(all_metrics),
-                        'vram': sum(m['vram'] for m in all_metrics) / len(all_metrics)
-                    }
-                    
-                    st.subheader("📈 Average Resource Usage")
-                    cols = st.columns(4)
-                    cols[0].metric("Avg CPU Usage", f"{avg_metrics['cpu']:.1f}%")
-                    cols[1].metric("Avg GPU Usage", f"{avg_metrics['gpu']:.1f}%")
-                    cols[2].metric("Avg RAM Usage", f"{avg_metrics['ram']:.1f}%")
-                    cols[3].metric("Avg VRAM Usage", f"{avg_metrics['vram']:.1f}%")
-                
-                st.markdown("---")
-                
-                # Display chat messages
-                display_chat_messages(messages)
 else:
-    st.info("👈 Please select one or more GPUs and models from the sidebar to view their chat logs.")
+    st.info("Please select at least one GPU and one model to view chat logs.")
 
 # Footer
 st.markdown("---")
-st.markdown("💬 Chat logs viewer for comparing LLM conversations") 
+st.markdown("💬 Chat log viewer for examining LLM responses") 

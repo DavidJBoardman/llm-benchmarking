@@ -5,18 +5,36 @@ import plotly.graph_objects as go
 from pathlib import Path
 import json
 import os
+import logging
+from utils.db import init_db
+from utils.file_storage import read_file, read_csv, is_using_s3, get_file_path
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Initialize database tables
+init_db()
 
 # Define data directory
 DATA_DIR = "data"
+
+# Ensure data directory exists
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+    logger.warning(f"Created missing data directory: {DATA_DIR}")
 
 st.set_page_config(layout="wide", page_title="LLM Benchmark Dashboard")
 
 # Function to read performance metrics from txt files
 def read_performance_metrics(file_path):
     try:
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
+        content = read_file(file_path)
+        if content is None:
+            logger.warning(f"File not found: {file_path}")
+            return {}
         
+        lines = content.splitlines()
         metrics = {}
         for line in lines:
             if ':' in line:
@@ -24,13 +42,18 @@ def read_performance_metrics(file_path):
                 metrics[key.strip()] = value.strip()
         return metrics
     except Exception as e:
+        logger.error(f"Error reading file {file_path}: {str(e)}")
         st.error(f"Error reading file {file_path}: {str(e)}")
         return {}
 
 # Function to read and process CSV files
 def read_benchmark_csv(file_path):
     try:
-        df = pd.read_csv(file_path)
+        df = read_csv(file_path)
+        if df is None:
+            logger.warning(f"CSV file not found: {file_path}")
+            return pd.DataFrame()
+        
         # Fix timestamp format by adding space between date and time
         df['timestamp'] = df['timestamp'].str.replace(r'(\d{4}/\d{2}/\d{2})(\d{2}:\d{2}:\d{2}\.\d+)', r'\1 \2', regex=True)
         df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y/%m/%d %H:%M:%S.%f')
@@ -40,7 +63,8 @@ def read_benchmark_csv(file_path):
         df['relative_time'] = (df['timestamp'] - start_time).dt.total_seconds()
         return df
     except Exception as e:
-        st.error(f"Error reading CSV file {file_path}: {str(e)}")
+        logger.error(f"Error processing CSV file {file_path}: {str(e)}")
+        st.error(f"Error processing CSV file {file_path}: {str(e)}")
         return pd.DataFrame()
 
 # Style and layout
@@ -54,10 +78,27 @@ st.markdown("""
         border-radius: 5px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .info-box {
+        background-color: #2a4365;
+        color: #ffffff;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0;
+        border-left: 4px solid #4299e1;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🚀 LLM Benchmark Dashboard")
+
+# Display S3 status
+if is_using_s3():
+    st.markdown(
+        """<div class="info-box">
+            📥 S3 storage is enabled. Benchmark data will be read from S3 if available.
+        </div>""",
+        unsafe_allow_html=True
+    )
 
 # Define all benchmark files for both GPUs
 gpu_model_files = {
@@ -132,6 +173,30 @@ gpu_model_files = {
     }
 }
 
+# Helper function to get file path (local or S3)
+def get_benchmark_file_path(gpu, model, file_type):
+    """Get the file path for a benchmark file, checking S3 first if enabled."""
+    # Try S3 path first
+    s3_path = f"benchmarks/{gpu_model_files[gpu]['directory']}/{gpu_model_files[gpu]['models'][model][file_type]}"
+    file_path = get_file_path(s3_path, "", check_s3=True)
+    
+    # If not found in S3, use local path
+    if not file_path.startswith("s3://"):
+        file_path = os.path.join(DATA_DIR, f"{gpu_model_files[gpu]['directory']}/{gpu_model_files[gpu]['models'][model][file_type]}")
+    
+    return file_path
+
+# Check if data directories exist
+available_gpus = []
+for gpu in gpu_model_files:
+    gpu_dir = os.path.join(DATA_DIR, gpu_model_files[gpu]['directory'])
+    if os.path.exists(gpu_dir):
+        available_gpus.append(gpu)
+    else:
+        logger.warning(f"GPU directory not found: {gpu_dir}")
+
+if not available_gpus:
+    st.warning(f"No GPU data directories found in {DATA_DIR}. Please ensure data is properly loaded.")
 
 # Sidebar for selection
 st.sidebar.title("Settings")
@@ -139,17 +204,22 @@ st.sidebar.title("Settings")
 # GPU Selection
 selected_gpus = st.sidebar.multiselect(
     "Select GPUs to Compare",
-    list(gpu_model_files.keys()),
-    default=list(gpu_model_files.keys())
+    available_gpus,
+    default=available_gpus
 )
 
 # Model Selection
-all_models = list(gpu_model_files["RTX 4090"]["models"].keys())
-selected_models = st.sidebar.multiselect(
-    "Select Models to Compare",
-    all_models,
-    default=all_models
-)
+if selected_gpus:
+    all_models = list(gpu_model_files[selected_gpus[0]]["models"].keys())
+    selected_models = st.sidebar.multiselect(
+        "Select Models to Compare",
+        all_models,
+        default=all_models
+    )
+else:
+    all_models = []
+    selected_models = []
+    st.sidebar.warning("No GPUs available for selection")
 
 run_type = st.sidebar.selectbox(
     "Select Run Type",
@@ -171,10 +241,12 @@ for gpu in selected_gpus:
     for model in selected_models:
         model_key = f"{gpu} - {model}"
         try:
-            file_path = Path(os.path.join(DATA_DIR, f"{gpu_model_files[gpu]['directory']}/{gpu_model_files[gpu]['models'][model]['txt']}"))
+            file_path = get_benchmark_file_path(gpu, model, "txt")
             metrics = read_performance_metrics(file_path)
-            metrics_data[model_key] = metrics
+            if metrics:
+                metrics_data[model_key] = metrics
         except Exception as e:
+            logger.warning(f"Could not read metrics for {model_key}: {str(e)}")
             st.warning(f"Could not read metrics for {model_key}: {str(e)}")
 
 if metrics_data:
@@ -182,7 +254,10 @@ if metrics_data:
     def clean_metric_value(value):
         if isinstance(value, str):
             # Remove units and convert to float
-            return float(''.join(c for c in value.split()[0] if c.isdigit() or c == '.'))
+            try:
+                return float(''.join(c for c in value.split()[0] if c.isdigit() or c == '.'))
+            except ValueError:
+                return 0
         return value
 
     # Process metrics for visualization
@@ -345,6 +420,8 @@ if metrics_data:
     - **Lowest Latency**: {lowest_latency} ({viz_df.loc[lowest_latency, 'Total Duration (s)']:.2f} seconds)
     - **Fastest Prompt Processing**: {fastest_prompt} ({viz_df.loc[fastest_prompt, 'Prompt Eval Rate (tokens/s)']:.2f} tokens/s)
     """)
+else:
+    st.warning("No performance metrics data available for the selected GPUs and models.")
 
 # GPU Metrics Over Time
 st.header("📈 GPU Resource Usage Over Time")
@@ -366,64 +443,42 @@ for metric_label, metric in metrics_to_plot:
     st.subheader(metric_label)
     fig = go.Figure()
     
+    data_available = False
     for gpu in selected_gpus:
         for model in selected_models:
             try:
-                file_path = Path(os.path.join(DATA_DIR, f"{gpu_model_files[gpu]['directory']}/{gpu_model_files[gpu]['models'][model][run_type]}"))
+                file_path = get_benchmark_file_path(gpu, model, run_type)
                 df = read_benchmark_csv(file_path)
-                fig.add_trace(go.Scatter(
-                    x=df['relative_time'],
-                    y=df[metric],
-                    name=f"{gpu} - {model}",
-                    mode='lines'
-                ))
+                if not df.empty and metric in df.columns:
+                    fig.add_trace(go.Scatter(
+                        x=df['relative_time'],
+                        y=df[metric],
+                        name=f"{gpu} - {model}",
+                        mode='lines'
+                    ))
+                    data_available = True
             except Exception as e:
-                st.warning(f"Could not read data for {gpu} - {model}: {str(e)}")
+                logger.warning(f"Could not read data for {gpu} - {model}: {str(e)}")
     
-    fig.update_layout(
-        xaxis_title="Time (seconds)",
-        yaxis_title=metric_label,
-        height=400,
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=1.02,  # Position legend outside the plot area
-            bordercolor="rgba(0, 0, 0, 0.2)",    # Light border
-            borderwidth=1
-        ),
-        margin=dict(r=150)  # Add right margin to accommodate legend
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    if data_available:
+        fig.update_layout(
+            xaxis_title="Time (seconds)",
+            yaxis_title=metric_label,
+            height=400,
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=1.02,  # Position legend outside the plot area
+                bordercolor="rgba(0, 0, 0, 0.2)",    # Light border
+                borderwidth=1
+            ),
+            margin=dict(r=150)  # Add right margin to accommodate legend
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info(f"No data available for {metric_label} with the current selection.")
 
 # Footer
 st.markdown("---")
-st.markdown("📊 Dashboard created for comparing LLM benchmark performance across different GPUs")
-
-# Function to read performance metrics from txt files
-def read_performance_metrics(file_path):
-    try:
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
-        
-        metrics = {}
-        for line in lines:
-            if ':' in line:
-                key, value = line.split(':', 1)
-                metrics[key.strip()] = value.strip()
-        return metrics
-    except Exception as e:
-        st.error(f"Error reading file {file_path}: {str(e)}")
-        return {}
-
-# Function to read and process CSV files
-def read_benchmark_csv(file_path):
-    df = pd.read_csv(file_path)
-    # Fix timestamp format by adding space between date and time
-    df['timestamp'] = df['timestamp'].str.replace(r'(\d{4}/\d{2}/\d{2})(\d{2}:\d{2}:\d{2}\.\d+)', r'\1 \2', regex=True)
-    df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y/%m/%d %H:%M:%S.%f')
-    
-    # Convert to relative time in seconds from start
-    start_time = df['timestamp'].min()
-    df['relative_time'] = (df['timestamp'] - start_time).dt.total_seconds()
-    return df 
+st.markdown("📊 Dashboard created for comparing LLM benchmark performance across different GPUs") 
