@@ -2,6 +2,13 @@
 
 This is a simplified guide for deploying the LLM Benchmarking Dashboard to AWS App Runner.
 
+## Prerequisites
+
+- AWS App Runner supports Python 3.11 for this application
+- AWS account with appropriate permissions
+- PostgreSQL database (RDS) set up and accessible
+- S3 bucket for file storage
+
 ## Quick Deployment Steps
 
 1. **Log in to the AWS Management Console**
@@ -34,6 +41,7 @@ If you encounter build failures:
 
 1. **Check the logs** in the AWS App Runner console
 2. **Common issues**:
+   - Python version mismatch: Make sure runtime is set to python3.11 in apprunner.yaml
    - Missing system dependencies: The pre-build commands should install these
    - Python package installation failures: Try updating requirements.txt
    - Permission issues: Make sure your App Runner service has the necessary permissions
@@ -56,6 +64,7 @@ If you continue to have issues with the apprunner.yaml file, you can try manual 
 
 1. Choose "Configuration file" = "Configuration values"
 2. Set:
+   - Runtime: Python 3.11
    - Build command: `pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt`
    - Start command: `streamlit run 1_Dashboard.py --server.port=8080 --server.address=0.0.0.0`
    - Port: 8080

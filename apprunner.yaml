@@ -1,5 +1,5 @@
 version: 1.0
-runtime: python3.12.7
+runtime: python3.11
 build:
   commands:
     pre-build:
@@ -21,3 +21,12 @@ run:
     - name: PYTHONDONTWRITEBYTECODE
       value: "1"
   service_role: AppRunnerECRAccessRole
+health_check:
+  path: "/_stcore/health"
+  interval: 30
+  timeout: 5
+  healthy_threshold: 1
+  unhealthy_threshold: 5
+instance_configuration:
+  cpu: 1
+  memory: 2048
