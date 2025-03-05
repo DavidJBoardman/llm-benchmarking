@@ -10,6 +10,6 @@ run:
   pre-run:
     - pip3 install --upgrade pip
     - pip3 install --no-cache-dir -r requirements.txt
-  command: python3 -m streamlit run 1_Dashboard.py --server.port=8080 --server.address=0.0.0.0
+  command: python3 -m streamlit run 1_Dashboard.py --server.port=8080 --server.address=0.0.0.0 --server.enableCORS=false --server.enableWebsocketCompression=false --server.headless=true --server.runOnSave=false
   network:
     port: 8080
