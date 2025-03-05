@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Initialize the database with sample data for testing.
-This script will create sample GPU and LLM models in the database.
+Initialize the database with sample data.
+This script is run when INIT_DB is set to true.
 """
 
 import os
 import sys
-from utils.db import SessionLocal, GPUModel, LLMModel, init_db
+import time
+from utils.db import init_db, add_custom_gpu, add_custom_llm_model, SessionLocal, GPUModel, LLMModel
 
-def init_sample_data():
-    """Initialize the database with sample data."""
-    print("Initializing database with sample data...")
+def main():
+    print("Initializing database...")
     
     # Initialize database schema
     init_db()
@@ -22,51 +22,49 @@ def init_sample_data():
         sys.exit(1)
     
     try:
-        # Add sample GPU models
+        # Add sample GPU models if they don't exist
         default_gpus = [
-            {"name": "RTX 4090", "is_custom": False},
-            {"name": "RTX 4080S", "is_custom": False},
-            {"name": "ADA 6000", "is_custom": False},
-            {"name": "RTX 3090", "is_custom": True},
-            {"name": "A100", "is_custom": True},
-            {"name": "H100", "is_custom": True}
+            "RTX 4090", 
+            "RTX 4080S", 
+            "ADA 6000", 
+            "RTX 3090", 
+            "A100", 
+            "H100"
         ]
         
-        for gpu_data in default_gpus:
+        for gpu_name in default_gpus:
             # Check if GPU already exists
-            existing = db.query(GPUModel).filter(GPUModel.name == gpu_data["name"]).first()
+            existing = db.query(GPUModel).filter(GPUModel.name == gpu_name).first()
             if not existing:
-                gpu = GPUModel(**gpu_data)
-                db.add(gpu)
-                print(f"Added GPU: {gpu_data['name']}")
+                # Use the add_custom_gpu function to add the GPU
+                add_custom_gpu(gpu_name)
+                print(f"Added GPU: {gpu_name}")
         
-        # Add sample LLM models
+        # Add sample LLM models if they don't exist
         default_models = [
-            {"name": "llama3-latest", "is_custom": False},
-            {"name": "llama3-8b-instruct", "is_custom": False},
-            {"name": "llama2-7b-chat", "is_custom": False},
-            {"name": "llama3-70b", "is_custom": True},
-            {"name": "mistral-7b", "is_custom": True},
-            {"name": "claude-3-opus", "is_custom": True}
+            "llama3-latest", 
+            "llama3-8b-instruct", 
+            "llama2-7b-chat", 
+            "llama3-70b", 
+            "mistral-7b", 
+            "claude-3-opus"
         ]
         
-        for model_data in default_models:
+        for model_name in default_models:
             # Check if model already exists
-            existing = db.query(LLMModel).filter(LLMModel.name == model_data["name"]).first()
+            existing = db.query(LLMModel).filter(LLMModel.name == model_name).first()
             if not existing:
-                model = LLMModel(**model_data)
-                db.add(model)
-                print(f"Added LLM model: {model_data['name']}")
+                # Use the add_custom_llm_model function to add the model
+                add_custom_llm_model(model_name)
+                print(f"Added LLM model: {model_name}")
         
-        # Commit changes
-        db.commit()
-        print("Sample data initialization complete.")
+        print("Database initialization complete!")
     
     except Exception as e:
-        print(f"Error initializing sample data: {str(e)}")
-        db.rollback()
+        print(f"Error initializing database: {str(e)}")
     finally:
-        db.close()
+        if db:
+            db.close()
 
 if __name__ == "__main__":
-    init_sample_data() 
+    main() 
