@@ -28,17 +28,46 @@ A comprehensive dashboard for visualizing and comparing LLM benchmark performanc
    ```
 3. Create a `.env` file based on `.env.example`:
    ```
-   cp .env.example .env
+   POSTGRES_URI="postgresql+psycopg2://username:password@hostname:port/database"
+   POSTGRES_USER="username"
+   POSTGRES_PASSWORD="password"
+   POSTGRES_HOST="hostname"
+   POSTGRES_PORT="5432"
+   POSTGRES_DB="database_name"
+   INIT_DB="false"  # Set to "true" to initialize the database with sample data
+
+   # AWS S3 Configuration (optional)
+   AWS_ACCESS_KEY_ID="your_access_key_id"
+   AWS_SECRET_ACCESS_KEY="your_secret_access_key"
+   AWS_REGION="us-east-1"
+   S3_BUCKET_NAME="your-s3-bucket-name"
+   USE_S3_STORAGE="true"  # Set to "false" to use local storage instead of S3
    ```
-4. Edit the `.env` file with your PostgreSQL credentials and AWS S3 settings
-5. Initialize the database with sample data (optional):
-   ```
-   python init_sample_data.py
-   ```
-6. Run the application:
+4. Run the application:
    ```
    streamlit run 1_Dashboard.py
    ```
+
+## Docker Deployment
+
+This project includes Docker support for easy deployment. See [DOCKER.md](DOCKER.md) for detailed instructions.
+
+Quick start:
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or use the test script
+./build_and_test.sh
+```
+
+## AWS App Runner Deployment
+
+This project is configured for deployment to AWS App Runner. See [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md) for detailed instructions.
+
+Key files:
+- `apprunner.yaml`: Configuration for AWS App Runner
+- `Dockerfile`: Container definition
 
 ## AWS Deployment
 
