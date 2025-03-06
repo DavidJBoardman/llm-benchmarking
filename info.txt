@@ -1,4 +1,0 @@
-load time: time it takes for the model to load.
-sample time: time it takes to "tokenize" (sample) the prompt message for it to be processed by the program.
-prompt eval time: time it takes to process the tokenized prompt message. If this isn't done, there would be no context for the model to know what token to predict next.
-eval time: time needed to generate all tokens as the response to the prompt (excludes all pre-processing time, and it only measures the time since it starts outputting tokens).

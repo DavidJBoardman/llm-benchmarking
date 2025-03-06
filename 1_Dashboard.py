@@ -8,10 +8,15 @@ import os
 import logging
 from utils.db import init_db
 from utils.file_storage import read_file, read_csv, is_using_s3, get_file_path
+from utils.health_check import setup_health_check
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Set up health check for AWS App Runner
+setup_health_check()
+logger.info(f"Starting application on port {os.environ.get('PORT', '8501')}")
 
 # Initialize database tables
 init_db()

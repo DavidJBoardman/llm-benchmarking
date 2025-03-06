@@ -98,6 +98,58 @@ To deploy to AWS App Runner:
 1. Push your code to a GitHub repository
 2. Follow the instructions in `AWS_DEPLOYMENT.md`
 
+## Deploying to AWS
+
+This application can be deployed to AWS using Docker and AWS App Runner. The deployment process is automated using the provided script.
+
+### Prerequisites
+
+1. Install and configure the AWS CLI:
+   ```bash
+   pip install awscli
+   aws configure  # Enter your AWS credentials
+   ```
+
+2. Make sure you have Docker installed and running on your machine.
+
+3. Ensure you have the necessary IAM permissions to:
+   - Create and push to ECR repositories
+   - Create and update App Runner services
+   - Create IAM roles (or use existing ones)
+
+### Deployment Steps
+
+1. Make sure your `.env` file is properly configured with your database and S3 credentials.
+
+2. Run the deployment script:
+   ```bash
+   ./deploy_to_aws.sh
+   ```
+
+3. The script will:
+   - Build your Docker image
+   - Push it to Amazon ECR
+   - Create or update an App Runner service
+   - Display the URL where your application is deployed
+
+### Customizing the Deployment
+
+You can customize the deployment by editing the `deploy_to_aws.sh` script:
+
+- Change the AWS region
+- Modify the ECR repository name
+- Change the App Runner service name
+- Adjust the instance configuration (CPU/memory)
+
+### Troubleshooting
+
+If you encounter issues during deployment:
+
+1. Check that your AWS credentials are correctly configured
+2. Ensure you have the necessary IAM permissions
+3. Verify that your Docker image builds and runs locally
+4. Check the AWS App Runner console for service logs
+
 ## Database Schema
 
 The application uses the following database tables:
@@ -112,4 +164,31 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Deployment
+
+### Local Deployment with Docker
+
+For local deployment using Docker:
+
+1. Make sure Docker is installed and running on your machine
+   - See [Docker Setup Guide](DOCKER_SETUP.md) for installation instructions
+
+2. Build and run the Docker container:
+   ```bash
+   docker build -t scenegraph-studios-benchmarks .
+   docker run -p 8501:8501 --env-file .env scenegraph-studios-benchmarks
+   ```
+
+3. Access the application at http://localhost:8501
+
+### AWS Deployment
+
+For deploying to AWS:
+
+1. Follow the [AWS Deployment Guide](AWS_DEPLOYMENT.md) for detailed instructions
+2. Or use the quick deployment script:
+   ```bash
+   ./deploy_to_aws.sh
+   ``` 

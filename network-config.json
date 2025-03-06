@@ -1,0 +1,9 @@
+{
+  "IngressConfiguration": {
+    "IsPubliclyAccessible": true
+  },
+  "EgressConfiguration": {
+    "EgressType": "DEFAULT"
+  },
+  "IpAddressType": "IPV4"
+}

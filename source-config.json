@@ -1,0 +1,20 @@
+{
+  "AuthenticationConfiguration": {
+    "AccessRoleArn": "arn:aws:iam::790750841690:role/service-role/AppRunnerECRAccessRole"
+  },
+  "AutoDeploymentsEnabled": true,
+  "ImageRepository": {
+    "ImageIdentifier": "790750841690.dkr.ecr.eu-west-2.amazonaws.com/scenegraph-studios-benchmark-dashboard:latest",
+    "ImageConfiguration": {
+      "Port": "8501",
+      "RuntimeEnvironmentVariables": {
+        "ENABLE_HEALTH_CHECK": "true",
+        "STREAMLIT_SERVER_ENABLE_CORS": "false",
+        "STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION": "false",
+        "STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION": "false",
+        "STREAMLIT_SERVER_HEADLESS": "true"
+      }
+    },
+    "ImageRepositoryType": "ECR"
+  }
+}
